@@ -77,10 +77,14 @@ def version():
 
 @app.command()
 def ingest(
-    path: Path = typer.Argument(..., help="Directory path to ingest"),
+    paths: list[Path] = typer.Argument(
+        ..., help="One or more directory paths to ingest"
+    ),
 ):
-    """Ingest documents and images from a directory."""
-    ingest_directory(path)
+    """Ingest documents and images from one or more directories."""
+    from local_rag_cli.ingest import ingest_directories
+
+    ingest_directories(paths)
 
 
 @app.command()

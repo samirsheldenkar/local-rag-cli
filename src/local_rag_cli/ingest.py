@@ -115,3 +115,97 @@ def ingest_directory(path: Path) -> None:
             console.print(f"[green]Indexed {len(nodes)} images[/green]")
 
     console.print("[bold green]Ingestion complete![/bold green]")
+
+
+def ingest_directories(paths: list[Path]) -> None:
+    """Ingest all files from multiple directories."""
+    # Ensure collections exist
+    ensure_collections_exist()
+
+    # Validate all paths first
+    valid_paths = []
+    for path in paths:
+        if not path.exists():
+            console.print(f"[red]Path does not exist: {path}[/red]")
+            continue
+        if not path.is_dir():
+            console.print(f"[red]Path is not a directory: {path}[/red]")
+            continue
+        valid_paths.append(path)
+
+    if not valid_paths:
+        console.print("[red]No valid directories to ingest.[/red]")
+        return
+
+    # Get embedding models
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Loading embedding models...", total=None)
+        text_embedding, image_embedding = get_embedding_models()
+        progress.update(task, completed=True)
+
+        all_text_docs = []
+        all_image_docs = []
+
+        # Load documents from all directories
+        for path in valid_paths:
+            task = progress.add_task(f"Loading documents from {path}...", total=None)
+            reader = SimpleDirectoryReader(
+                input_dir=path,
+                filename_as_id=True,
+                recursive=True,
+            )
+            documents = reader.load_data()
+            progress.update(task, completed=True)
+
+            # Separate text and image documents
+            for doc in documents:
+                if doc.metadata.get("file_type", "").startswith("image/"):
+                    all_image_docs.append(doc)
+                else:
+                    all_text_docs.append(doc)
+
+        total_docs = len(all_text_docs) + len(all_image_docs)
+        if not total_docs:
+            console.print("[yellow]No documents found in any directory.[/yellow]")
+            return
+
+        console.print(f"[green]Loaded {total_docs} documents total[/green]")
+        console.print(f"[blue]Text documents: {len(all_text_docs)}[/blue]")
+        console.print(f"[blue]Image documents: {len(all_image_docs)}[/blue]")
+
+        # Ingest text documents
+        if all_text_docs:
+            task = progress.add_task("Processing text documents...", total=None)
+            text_store = get_text_vector_store()
+
+            pipeline = IngestionPipeline(
+                transformations=[
+                    SentenceSplitter(chunk_size=1024, chunk_overlap=200),
+                    text_embedding,
+                ],
+                vector_store=text_store,
+            )
+            nodes = pipeline.run(documents=all_text_docs)
+            progress.update(task, completed=True)
+            console.print(f"[green]Indexed {len(nodes)} text chunks[/green]")
+
+        # Ingest image documents
+        if all_image_docs:
+            task = progress.add_task("Processing image documents...", total=None)
+            image_store = get_image_vector_store()
+
+            pipeline = IngestionPipeline(
+                transformations=[
+                    image_embedding,
+                ],
+                vector_store=image_store,
+            )
+            nodes = pipeline.run(documents=all_image_docs)
+            progress.update(task, completed=True)
+            console.print(f"[green]Indexed {len(nodes)} images[/green]")
+
+    console.print("[bold green]All directories ingested successfully![/bold green]")
