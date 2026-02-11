@@ -15,6 +15,8 @@ class TestSettings:
         """Test that default values are set correctly."""
         settings = Settings()
 
+        assert settings.VECTOR_STORE_TYPE == "chromadb"
+        assert settings.CHROMADB_PATH == "./chromadb_data"
         assert settings.QDRANT_URL == "http://localhost:6333"
         assert settings.QDRANT_API_KEY is None
         assert settings.LLM_BASE_URL == "http://localhost:1234/v1"
@@ -30,6 +32,8 @@ class TestSettings:
         with patch.dict(
             os.environ,
             {
+                "VECTOR_STORE_TYPE": "qdrant",
+                "CHROMADB_PATH": "/custom/chroma/path",
                 "QDRANT_URL": "http://qdrant.example.com:6333",
                 "LLM_MODEL": "custom-model",
                 "REQUEST_TIMEOUT": "300.0",
@@ -37,6 +41,8 @@ class TestSettings:
         ):
             settings = Settings()
 
+            assert settings.VECTOR_STORE_TYPE == "qdrant"
+            assert settings.CHROMADB_PATH == "/custom/chroma/path"
             assert settings.QDRANT_URL == "http://qdrant.example.com:6333"
             assert settings.LLM_MODEL == "custom-model"
             assert settings.REQUEST_TIMEOUT == 300.0

@@ -1,12 +1,12 @@
 # Local RAG CLI
 
-A CLI-based RAG (Retrieval Augmented Generation) system built on LlamaIndex and Qdrant, optimized for Apple Silicon (Mac Mini M4 Pro). Supports ingestion of PDF, Office documents, and images using multimodal embeddings.
+A CLI-based RAG (Retrieval Augmented Generation) system built on LlamaIndex, optimized for Apple Silicon (Mac Mini M4 Pro). Supports ingestion of PDF, Office documents, and images using multimodal embeddings. Uses ChromaDB as the default vector store with Qdrant as an alternative option.
 
 ## Features
 
 - **Local LLM Support**: Works with LMStudio, llama.cpp, or any OpenAI-compatible API
 - **Multimodal RAG**: Indexes both text (PDF, DOCX, XLSX) and images
-- **Vector Database**: Uses Qdrant for efficient vector storage and retrieval
+- **Vector Database**: Uses ChromaDB by default; Qdrant available as an alternative
 - **Apple Silicon Optimized**: Designed for Mac M4 Pro with local inference
 
 ## Installation
@@ -23,7 +23,14 @@ uv pip install -e .
 Create a `.env` file or set environment variables:
 
 ```env
-# Qdrant Configuration
+# Vector Store Configuration (default: chromadb)
+# Options: "chromadb", "qdrant"
+VECTOR_STORE_TYPE=chromadb
+
+# ChromaDB Configuration (persistent mode)
+CHROMADB_PATH=./chromadb_data
+
+# Qdrant Configuration (only needed if VECTOR_STORE_TYPE=qdrant)
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-api-key  # Optional
 
@@ -79,5 +86,6 @@ uv run python -m local_rag_cli --help
 ## Requirements
 
 - Python 3.12+
-- Qdrant instance (local or remote)
+- For Qdrant: A running Qdrant instance (local or remote)
+- For ChromaDB: No additional server required (uses persistent local storage)
 - Local LLM server (LMStudio, llama.cpp, etc.)
