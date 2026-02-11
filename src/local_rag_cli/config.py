@@ -12,6 +12,12 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Vector Store Configuration
+    VECTOR_STORE_TYPE: str = "chromadb"  # Options: "chromadb", "qdrant"
+
+    # ChromaDB Configuration (persistent mode)
+    CHROMADB_PATH: str = "./chromadb_data"
+
     # Qdrant Configuration
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: str | None = None
