@@ -1,9 +1,12 @@
 """Storage module for vector store management."""
 
 from llama_index.core.indices import MultiModalVectorStoreIndex
+from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
+
+import chromadb
 
 from local_rag_cli.config import settings
 
@@ -16,22 +19,45 @@ def get_qdrant_client() -> QdrantClient:
     )
 
 
-def get_text_vector_store() -> QdrantVectorStore:
+def get_chroma_client() -> chromadb.PersistentClient:
+    """Get ChromaDB persistent client instance."""
+    return chromadb.PersistentClient(path=settings.CHROMADB_PATH)
+
+
+def get_text_vector_store():
     """Get vector store for text documents."""
-    client = get_qdrant_client()
-    return QdrantVectorStore(
-        client=client,
-        collection_name="rag_text",
-    )
+    if settings.VECTOR_STORE_TYPE == "chromadb":
+        client = get_chroma_client()
+        collection = client.get_or_create_collection("rag_text")
+        return ChromaVectorStore(
+            chroma_collection=collection,
+        )
+    elif settings.VECTOR_STORE_TYPE == "qdrant":
+        client = get_qdrant_client()
+        return QdrantVectorStore(
+            client=client,
+            collection_name="rag_text",
+        )
+    else:
+        raise ValueError(f"Unknown vector store type: {settings.VECTOR_STORE_TYPE}")
 
 
-def get_image_vector_store() -> QdrantVectorStore:
+def get_image_vector_store():
     """Get vector store for images."""
-    client = get_qdrant_client()
-    return QdrantVectorStore(
-        client=client,
-        collection_name="rag_images",
-    )
+    if settings.VECTOR_STORE_TYPE == "chromadb":
+        client = get_chroma_client()
+        collection = client.get_or_create_collection("rag_images")
+        return ChromaVectorStore(
+            chroma_collection=collection,
+        )
+    elif settings.VECTOR_STORE_TYPE == "qdrant":
+        client = get_qdrant_client()
+        return QdrantVectorStore(
+            client=client,
+            collection_name="rag_images",
+        )
+    else:
+        raise ValueError(f"Unknown vector store type: {settings.VECTOR_STORE_TYPE}")
 
 
 def get_multimodal_index() -> MultiModalVectorStoreIndex:
@@ -46,23 +72,30 @@ def get_multimodal_index() -> MultiModalVectorStoreIndex:
 
 
 def ensure_collections_exist() -> None:
-    """Ensure Qdrant collections exist."""
-    client = get_qdrant_client()
+    """Ensure vector store collections exist."""
+    if settings.VECTOR_STORE_TYPE == "chromadb":
+        client = get_chroma_client()
+        # ChromaDB creates collections automatically with get_or_create_collection
+        # but we call it here to ensure they exist at startup
+        client.get_or_create_collection("rag_text")
+        client.get_or_create_collection("rag_images")
+    elif settings.VECTOR_STORE_TYPE == "qdrant":
+        client = get_qdrant_client()
 
-    # Create text collection if it doesn't exist
-    try:
-        client.get_collection("rag_text")
-    except Exception:
-        client.create_collection(
-            collection_name="rag_text",
-            vectors_config=VectorParams(size=1024, distance=Distance.COSINE),
-        )
+        # Create text collection if it doesn't exist
+        try:
+            client.get_collection("rag_text")
+        except Exception:
+            client.create_collection(
+                collection_name="rag_text",
+                vectors_config=VectorParams(size=1024, distance=Distance.COSINE),
+            )
 
-    # Create image collection if it doesn't exist
-    try:
-        client.get_collection("rag_images")
-    except Exception:
-        client.create_collection(
-            collection_name="rag_images",
-            vectors_config=VectorParams(size=512, distance=Distance.COSINE),
-        )
+        # Create image collection if it doesn't exist
+        try:
+            client.get_collection("rag_images")
+        except Exception:
+            client.create_collection(
+                collection_name="rag_images",
+                vectors_config=VectorParams(size=512, distance=Distance.COSINE),
+            )
