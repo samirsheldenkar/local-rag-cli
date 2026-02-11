@@ -19,26 +19,39 @@ console = Console()
 
 @app.command()
 def health():
-    """Check health of Qdrant and LLM connections."""
+    """Check health of vector store and LLM connections."""
     console.print("[bold blue]Checking connections...[/bold blue]\n")
 
-    # Check Qdrant
-    qdrant_ok = False
+    # Check Vector Store
+    vector_store_ok = False
     try:
-        response = httpx.get(
-            f"{settings.QDRANT_URL}/collections",
-            timeout=10.0,
-            headers={"api-key": settings.QDRANT_API_KEY}
-            if settings.QDRANT_API_KEY
-            else {},
-        )
-        if response.status_code == 200:
-            qdrant_ok = True
-            console.print("[green]✓ Qdrant: OK[/green]")
+        if settings.VECTOR_STORE_TYPE == "chromadb":
+            import chromadb
+
+            client = chromadb.PersistentClient(path=settings.CHROMADB_PATH)
+            # ChromaDB doesn't have a direct health check, so we try to list collections
+            client.list_collections()
+            vector_store_ok = True
+            console.print("[green]✓ ChromaDB: OK[/green]")
+        elif settings.VECTOR_STORE_TYPE == "qdrant":
+            response = httpx.get(
+                f"{settings.QDRANT_URL}/collections",
+                timeout=10.0,
+                headers={"api-key": settings.QDRANT_API_KEY}
+                if settings.QDRANT_API_KEY
+                else {},
+            )
+            if response.status_code == 200:
+                vector_store_ok = True
+                console.print("[green]✓ Qdrant: OK[/green]")
+            else:
+                console.print(f"[red]✗ Qdrant: HTTP {response.status_code}[/red]")
         else:
-            console.print(f"[red]✗ Qdrant: HTTP {response.status_code}[/red]")
+            console.print(
+                f"[red]✗ Unknown vector store type: {settings.VECTOR_STORE_TYPE}[/red]"
+            )
     except Exception as e:
-        console.print(f"[red]✗ Qdrant: {e}[/red]")
+        console.print(f"[red]✗ Vector Store ({settings.VECTOR_STORE_TYPE}): {e}[/red]")
 
     # Check LLM
     llm_ok = False
@@ -59,7 +72,7 @@ def health():
         console.print(f"[red]✗ LLM: {e}[/red]")
 
     console.print()
-    if qdrant_ok and llm_ok:
+    if vector_store_ok and llm_ok:
         console.print("[bold green]All systems operational![/bold green]")
         sys.exit(0)
     else:
