@@ -67,6 +67,7 @@ def format_sources(response: Response) -> List[Dict[str, Any]]:
     for node_with_score in response.source_nodes:
         metadata = node_with_score.node.metadata
         file_name = metadata.get("file_name", metadata.get("file_path", "Unknown"))
+        file_path = metadata.get("file_path", "")
         score = node_with_score.score
 
         # Get text excerpt
@@ -80,6 +81,7 @@ def format_sources(response: Response) -> List[Dict[str, Any]]:
             seen_files.add(file_name)
             sources.append({
                 "file_name": file_name,
+                "file_path": file_path,
                 "score": score,
                 "excerpt": excerpt,
             })
