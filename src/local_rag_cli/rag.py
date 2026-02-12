@@ -1,7 +1,7 @@
 """RAG query engine module."""
 
 from llama_index.core.llms import ChatMessage
-from llama_index.llms.openai import OpenAI
+from llama_index.llms.ollama import Ollama
 from rich.console import Console
 from rich.markdown import Markdown
 
@@ -13,11 +13,10 @@ console = Console()
 
 def get_llm():
     """Get LLM instance configured for local inference."""
-    return OpenAI(
+    return Ollama(
         model=settings.LLM_MODEL,
-        api_base=settings.LLM_BASE_URL,
-        api_key=settings.LLM_API_KEY or "not-needed",
-        timeout=settings.REQUEST_TIMEOUT,
+        base_url=settings.LLM_BASE_URL,
+        request_timeout=settings.REQUEST_TIMEOUT,
     )
 
 

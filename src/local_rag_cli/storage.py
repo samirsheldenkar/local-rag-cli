@@ -9,6 +9,7 @@ from qdrant_client.models import Distance, VectorParams
 import chromadb
 
 from local_rag_cli.config import settings
+from local_rag_cli.embeddings import OpenCLIPEmbedding
 
 
 def get_qdrant_client() -> QdrantClient:
@@ -65,9 +66,15 @@ def get_multimodal_index() -> MultiModalVectorStoreIndex:
     text_store = get_text_vector_store()
     image_store = get_image_vector_store()
 
+    image_embed = OpenCLIPEmbedding(
+        model_name=settings.IMAGE_EMBEDDING_MODEL,
+        pretrained=settings.IMAGE_EMBEDDING_PRETRAINED,
+    )
+
     return MultiModalVectorStoreIndex(
         vector_store=text_store,
         image_vector_store=image_store,
+        image_embed_model=image_embed,
     )
 
 
