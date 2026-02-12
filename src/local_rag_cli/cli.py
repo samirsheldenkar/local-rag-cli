@@ -11,7 +11,7 @@ from rich.table import Table
 
 from local_rag_cli.config import settings
 from local_rag_cli.ingest import ingest_directory
-from local_rag_cli.rag import chat_loop, query_index
+from local_rag_cli.rag import chat_loop, print_sources, query_index
 
 app = typer.Typer(help="Local RAG CLI for Mac M4 Pro")
 console = Console()
@@ -103,12 +103,17 @@ def ingest(
 @app.command()
 def query(
     question: str = typer.Argument(..., help="Question to ask"),
+    no_sources: bool = typer.Option(
+        False, "--no-sources", help="Suppress source references in output"
+    ),
 ):
     """Query the indexed documents."""
     try:
         response = query_index(question)
         console.print("[bold green]Answer:[/bold green]")
-        console.print(response)
+        console.print(str(response))
+        if not no_sources:
+            print_sources(response)
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         sys.exit(1)

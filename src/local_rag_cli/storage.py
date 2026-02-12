@@ -1,6 +1,7 @@
 """Storage module for vector store management."""
 
 from llama_index.core.indices import MultiModalVectorStoreIndex
+from llama_index.core.storage import StorageContext
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.vector_stores.qdrant import QdrantVectorStore
@@ -76,10 +77,14 @@ def get_multimodal_index() -> MultiModalVectorStoreIndex:
         model_name=settings.TEXT_EMBEDDING_MODEL,
     )
 
+    storage_context = StorageContext.from_defaults(
+        vector_store=text_store,
+        image_store=image_store,
+    )
+
     return MultiModalVectorStoreIndex(
         nodes=[],
-        vector_store=text_store,
-        image_vector_store=image_store,
+        storage_context=storage_context,
         image_embed_model=image_embed,
         embed_model=text_embed,
     )
