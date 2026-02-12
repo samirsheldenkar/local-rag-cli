@@ -5,11 +5,11 @@ from typing import Any, List
 import open_clip
 import torch
 from llama_index.core.bridge.pydantic import Field, PrivateAttr
-from llama_index.core.embeddings import BaseEmbedding
+from llama_index.core.embeddings.multi_modal_base import MultiModalEmbedding
 from PIL import Image
 
 
-class OpenCLIPEmbedding(BaseEmbedding):
+class OpenCLIPEmbedding(MultiModalEmbedding):
     """Embedding model using OpenCLIP for both text and image embeddings.
 
     This provides a shared embedding space for text and images,
@@ -69,6 +69,9 @@ class OpenCLIPEmbedding(BaseEmbedding):
             image_features = self._model.encode_image(image_input)
             image_features /= image_features.norm(dim=-1, keepdim=True)
         return image_features.squeeze().cpu().tolist()
+
+    async def _aget_image_embedding(self, img_file_path: str) -> List[float]:
+        return self._get_image_embedding(img_file_path)
 
     def _get_query_embedding(self, query: str) -> List[float]:
         """Embed a query string (same as text embedding)."""
