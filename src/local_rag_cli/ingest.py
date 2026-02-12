@@ -6,7 +6,7 @@ from typing import List
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.clip import ClipEmbedding
+from local_rag_cli.embeddings import OpenCLIPEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -26,8 +26,9 @@ def get_embedding_models():
     text_embedding = HuggingFaceEmbedding(
         model_name=settings.TEXT_EMBEDDING_MODEL,
     )
-    image_embedding = ClipEmbedding(
+    image_embedding = OpenCLIPEmbedding(
         model_name=settings.IMAGE_EMBEDDING_MODEL,
+        pretrained=settings.IMAGE_EMBEDDING_PRETRAINED,
     )
     return text_embedding, image_embedding
 

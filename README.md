@@ -4,7 +4,7 @@ A CLI-based RAG (Retrieval Augmented Generation) system built on LlamaIndex, opt
 
 ## Features
 
-- **Local LLM Support**: Works with LMStudio, llama.cpp, or any OpenAI-compatible API
+- **Local LLM Support**: Works with Ollama, llama.cpp, or any OpenAI-compatible API
 - **Multimodal RAG**: Indexes both text (PDF, DOCX, XLSX) and images
 - **Vector Database**: Uses ChromaDB by default; Qdrant available as an alternative
 - **Apple Silicon Optimized**: Designed for Mac M4 Pro with local inference
@@ -34,18 +34,27 @@ CHROMADB_PATH=./chromadb_data
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-api-key  # Optional
 
-# LLM Configuration (OpenAI-compatible)
-LLM_BASE_URL=http://localhost:1234/v1
-LLM_API_KEY=your-api-key  # Optional
-LLM_MODEL=local-model
+# LLM Configuration (Ollama)
+LLM_BASE_URL=http://localhost:11434
+LLM_MODEL=llama3.1:8b
 
 # Embedding Models
 TEXT_EMBEDDING_MODEL=BAAI/bge-m3
-IMAGE_EMBEDDING_MODEL=ViT-B/32
+IMAGE_EMBEDDING_MODEL=ViT-B-32
+IMAGE_EMBEDDING_PRETRAINED=laion2b_s34b_b79k
 
 # Request Configuration
 REQUEST_TIMEOUT=600.0
 ```
+
+### Recommended Models
+
+| Setting | Default | Alternative | Notes |
+|---------|---------|-------------|-------|
+| `TEXT_EMBEDDING_MODEL` | `BAAI/bge-m3` | `BAAI/bge-large-en-v1.5` | bge-m3 is multilingual; bge-large is best for English-only |
+| `IMAGE_EMBEDDING_MODEL` | `ViT-B-32` | `ViT-L-14` | Larger model = better image understanding |
+| `IMAGE_EMBEDDING_PRETRAINED` | `laion2b_s34b_b79k` | `datacomp_xl_s13b_b90k` | LAION-2B is the standard; DataComp is newer |
+| `LLM_MODEL` | `llama3.1:8b` | `qwen2.5:14b-q4_K_M` | 14B fits in 24GB with room to spare |
 
 ## Usage
 
@@ -86,6 +95,6 @@ uv run python -m local_rag_cli --help
 ## Requirements
 
 - Python 3.12+
+- [Ollama](https://ollama.com) for local LLM inference (or any OpenAI-compatible API)
 - For Qdrant: A running Qdrant instance (local or remote)
 - For ChromaDB: No additional server required (uses persistent local storage)
-- Local LLM server (LMStudio, llama.cpp, etc.)

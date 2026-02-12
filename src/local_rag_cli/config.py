@@ -29,7 +29,8 @@ class Settings(BaseSettings):
 
     # Embedding Models
     TEXT_EMBEDDING_MODEL: str = "BAAI/bge-m3"
-    IMAGE_EMBEDDING_MODEL: str = "ViT-B/32"
+    IMAGE_EMBEDDING_MODEL: str = "ViT-B-32"
+    IMAGE_EMBEDDING_PRETRAINED: str = "laion2b_s34b_b79k"
 
     # Request Configuration
     REQUEST_TIMEOUT: float = 600.0  # 10 minutes for slow local inference
