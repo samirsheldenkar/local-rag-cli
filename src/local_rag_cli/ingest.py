@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import List
 
 from llama_index.core import SimpleDirectoryReader
-from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.storage.docstore import SimpleDocumentStore
 from local_rag_cli.embeddings import OpenCLIPEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from rich.console import Console
@@ -33,6 +34,27 @@ def get_embedding_models():
     return text_embedding, image_embedding
 
 
+def get_docstore() -> SimpleDocumentStore:
+    """Load existing docstore from disk or create a new one."""
+    persist_dir = settings.DOCSTORE_PATH
+    persist_path = Path(persist_dir)
+
+    if persist_path.exists() and (persist_path / "docstore.json").exists():
+        console.print("[dim]Loading existing docstore...[/dim]")
+        return SimpleDocumentStore.from_persist_dir(persist_dir=persist_dir)
+
+    console.print("[dim]Creating new docstore...[/dim]")
+    persist_path.mkdir(parents=True, exist_ok=True)
+    return SimpleDocumentStore()
+
+
+def persist_docstore(docstore: SimpleDocumentStore) -> None:
+    """Persist the docstore to disk."""
+    persist_dir = settings.DOCSTORE_PATH
+    Path(persist_dir).mkdir(parents=True, exist_ok=True)
+    docstore.persist(persist_path=str(Path(persist_dir) / "docstore.json"))
+
+
 def ingest_directory(path: Path) -> None:
     """Ingest all files from a directory."""
     if not path.exists():
@@ -45,6 +67,9 @@ def ingest_directory(path: Path) -> None:
 
     # Ensure collections exist
     ensure_collections_exist()
+
+    # Load docstore for dedup/update detection
+    docstore = get_docstore()
 
     # Get embedding models
     with Progress(
@@ -95,6 +120,8 @@ def ingest_directory(path: Path) -> None:
                     text_embedding,
                 ],
                 vector_store=text_store,
+                docstore=docstore,
+                docstore_strategy=DocstoreStrategy.UPSERTS_AND_DELETE,
             )
             nodes = pipeline.run(documents=text_docs)
             progress.update(task, completed=True)
@@ -110,11 +137,15 @@ def ingest_directory(path: Path) -> None:
                     image_embedding,
                 ],
                 vector_store=image_store,
+                docstore=docstore,
+                docstore_strategy=DocstoreStrategy.UPSERTS_AND_DELETE,
             )
             nodes = pipeline.run(documents=image_docs)
             progress.update(task, completed=True)
             console.print(f"[green]Indexed {len(nodes)} images[/green]")
 
+    # Persist docstore after ingestion
+    persist_docstore(docstore)
     console.print("[bold green]Ingestion complete![/bold green]")
 
 
@@ -122,6 +153,9 @@ def ingest_directories(paths: list[Path]) -> None:
     """Ingest all files from multiple directories."""
     # Ensure collections exist
     ensure_collections_exist()
+
+    # Load docstore for dedup/update detection
+    docstore = get_docstore()
 
     # Validate all paths first
     valid_paths = []
@@ -189,6 +223,8 @@ def ingest_directories(paths: list[Path]) -> None:
                     text_embedding,
                 ],
                 vector_store=text_store,
+                docstore=docstore,
+                docstore_strategy=DocstoreStrategy.UPSERTS_AND_DELETE,
             )
             nodes = pipeline.run(documents=all_text_docs)
             progress.update(task, completed=True)
@@ -204,9 +240,14 @@ def ingest_directories(paths: list[Path]) -> None:
                     image_embedding,
                 ],
                 vector_store=image_store,
+                docstore=docstore,
+                docstore_strategy=DocstoreStrategy.UPSERTS_AND_DELETE,
             )
             nodes = pipeline.run(documents=all_image_docs)
             progress.update(task, completed=True)
             console.print(f"[green]Indexed {len(nodes)} images[/green]")
 
+    # Persist docstore after ingestion
+    persist_docstore(docstore)
     console.print("[bold green]All directories ingested successfully![/bold green]")
+

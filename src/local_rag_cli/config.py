@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # ChromaDB Configuration (persistent mode)
     CHROMADB_PATH: str = "./chromadb_data"
 
+    # Docstore Configuration (for dedup and update detection)
+    DOCSTORE_PATH: str = "./docstore_data"
+
     # Qdrant Configuration
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: str | None = None
